@@ -14,9 +14,9 @@ void main() {
      * therefore, st = vec2(curr_m_x/width, curr_m_y/height),
      * normalizing it's values to the [0.0, 1.0] range
      */
-	vec2 st = u_mouse / u_resolution;
+    vec2 st = u_mouse / u_resolution;
     float z = abs(sin(u_time));
-	gl_FragColor = vec4(st.x, st.y, z, 1.0);
+    gl_FragColor = vec4(st.x, st.y, z, 1.0);
 
     // (R, G) values:
     //  _____________

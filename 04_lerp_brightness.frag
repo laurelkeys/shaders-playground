@@ -14,7 +14,7 @@ float plot(vec2 st, float pct){
 }
 
 void main() {
-	vec2 st = gl_FragCoord.xy / u_resolution;
+    vec2 st = gl_FragCoord.xy / u_resolution;
 
     float e = 0.5 * (sin(u_time) + 1.0) + 0.5; // value between 0.5-1.5
     float y = pow(st.x, e);
@@ -25,5 +25,5 @@ void main() {
     float pct = plot(st, y);
     color = (1.0 - pct) * color + pct * vec3(0.0, 1.0, 0.0); // lerp
 
-	gl_FragColor = vec4(color, 1.0);
+    gl_FragColor = vec4(color, 1.0);
 }
