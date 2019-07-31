@@ -28,4 +28,5 @@ void main() {
     // |_____________|
 }
 
-// obs.: https://computergraphics.stackexchange.com/questions/4537/what-does-st-mean-in-the-context-of-opengl/4539#4539
+// obs.: st are texture coordinates ("stpq = xyzw = rgba")
+// https://computergraphics.stackexchange.com/questions/4537/what-does-st-mean-in-the-context-of-opengl/4539#4539
