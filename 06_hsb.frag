@@ -5,7 +5,7 @@ precision mediump float;
 uniform vec2 u_resolution;
 uniform float u_time;
 
-vec3 rgb2hsb(vec3 c) {
+vec3 rgb2hsb(in vec3 c) {
     vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
     vec4 p = mix(vec4(c.bg, K.wz),
                  vec4(c.gb, K.xy),
@@ -20,7 +20,7 @@ vec3 rgb2hsb(vec3 c) {
                 q.x);
 }
 
-vec3 hsb2rgb(vec3 c) {    
+vec3 hsb2rgb(in vec3 c) {    
     vec3 rgb = clamp(abs(mod(c.x * 6.0 + vec3(0.0, 4.0, 2.0),
                              6.0) - 3.0) -1.0,
                      0.0,
@@ -29,7 +29,7 @@ vec3 hsb2rgb(vec3 c) {
 }
 
 // ref.: Iñigo Quiles https://www.shadertoy.com/view/MsS3Wc
-vec3 hsb2rgb_smooth(vec3 c) {    
+vec3 hsb2rgb_smooth(in vec3 c) {    
     vec3 rgb = clamp(abs(mod(c.x * 6.0 + vec3(0.0, 4.0, 2.0),
                              6.0) - 3.0) -1.0,
                      0.0,
@@ -50,3 +50,5 @@ void main() {
 
     gl_FragColor = vec4(color, 1.0);
 }
+
+// obs.: http://www.shaderific.com/glsl-qualifiers/#inputqualifier

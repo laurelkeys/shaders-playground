@@ -7,7 +7,6 @@ precision mediump float;
 uniform vec2 u_resolution;
 uniform float u_time;
 
-// ref.: Iñigo Quiles https://www.shadertoy.com/view/MsS3Wc
 vec3 hsb2rgb_smooth(in vec3 c) {    
     vec3 rgb = clamp(abs(mod(c.x * 6.0 + vec3(0.0, 4.0, 2.0),
                              6.0) - 3.0) -1.0,
@@ -28,10 +27,12 @@ void main() {
 
     // map the angle (-PI to PI) to the Hue (from 0 to 1)
     // and the Saturation to the radius
-    float hue = (angle / TWO_PI) + 0.5 * u_time;
-    color = hsb2rgb_smooth(vec3(hue, radius, 1.0));
+    float hue = (angle / TWO_PI) + 0.5;
+    // color = hsb2rgb_smooth(vec3(hue, radius, 1.0));
+    color = sin(hsb2rgb_smooth(vec3(hue, 1.0, 1.0))*u_time);
 
     gl_FragColor = vec4(color, 1.0);
 }
 
 // obs.: http://www.shaderific.com/glsl-qualifiers/#inputqualifier
+// TODO: more exercises from the end of https://thebookofshaders.com/06/

@@ -24,7 +24,8 @@ void main() {
 
     percent.r = smoothstep(0.2, 0.8, st.x);
     // percent.r = smoothstep(0.8, 0.2, st.x);
-    percent.g = 0.5*sin(st.x * 4.0 * PI)+0.5;
+    percent.g = sin(st.x * PI);
+    // percent.g = 0.5*sin(st.x * 4.0 * PI)+0.5;
     percent.b = pow(st.x, 0.5);
 
     color = mix(colorA, colorB, percent);
