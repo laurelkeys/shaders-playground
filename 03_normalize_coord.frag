@@ -18,5 +18,5 @@ void main() {
     gl_FragColor = vec4(st.x, st.y, 0.0, 1.0);
 }
 
-// obs.: st are texture coordinates ("stpq = xyzw = rgba")
+// obs.: st are used for spatial coordinates of a texture ("stpq = xyzw = rgba")
 // https://computergraphics.stackexchange.com/questions/4537/what-does-st-mean-in-the-context-of-opengl/4539#4539
