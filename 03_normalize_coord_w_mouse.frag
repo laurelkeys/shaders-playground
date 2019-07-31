@@ -27,3 +27,5 @@ void main() {
     // |0,0       1,0|
     // |_____________|
 }
+
+// obs.: https://computergraphics.stackexchange.com/questions/4537/what-does-st-mean-in-the-context-of-opengl/4539#4539
