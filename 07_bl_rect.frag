@@ -17,5 +17,5 @@ void main() {
     // the color will be black (vec3(0.0)) on the bottom-left
     color = vec3(left * bottom);
 
-    gl_FragColor = vec4(color,1.0);
+    gl_FragColor = vec4(color, 1.0);
 }

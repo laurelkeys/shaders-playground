@@ -20,5 +20,5 @@ void main() {
     // the color is black if it's in a corner
     color = vec3(left * right * bottom * top);
 
-    gl_FragColor = vec4(color,1.0);
+    gl_FragColor = vec4(color, 1.0);
 }
