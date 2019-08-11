@@ -10,22 +10,44 @@ float istep(float edge, float x) {
     return 1.0 - step(edge, x);
 }
 
+float pulse(float edge0, float edge1, float x) {
+    return step(edge0, x) - step(edge1, x);
+}
+
+float ipulse(float edge0, float edge1, float x) {
+    return 1.0 - pulse(edge0, edge1, x);
+}
+
+float sumFold(vec4 v) {
+    return v.x + v.y + v.z + v.w;
+}
+
+float productFold(vec4 v) {
+    return v.x * v.y * v.z * v.w;
+}
+
 void main() {
     vec2 st = gl_FragCoord.xy / u_resolution.xy;
     vec3 color = vec3(0.0);
 
     float size = 0.2;
-    
-    float margin_x = 0.1;
-    float margin_y = 0.1;
+    vec2 margin = vec2(0.1, 0.1);
 
-    float left = istep(margin_x, st.x) + step(margin_x + size, st.x);
-    float m_left = istep(margin_x, st.x);
-    float top = istep(margin_y, st.y) + step(margin_y + size, st.y);
-    float m_top = istep(margin_y, st.y);
+    vec4 sides = vec4(
+        ipulse(margin.x, margin.x + size, st.x),       // left
+        ipulse(margin.y, margin.y + size, 1.0 - st.y), // top
+        ipulse(margin.x, margin.x + size, 1.0 - st.x), // right
+        ipulse(margin.y, margin.y + size, st.y)        // bottom
+    );
 
-    // the color is black if it's in a corner
-    color = vec3(left*top + m_left + m_top);
+    vec4 margins = vec4(
+        istep(margin.x, st.x),    // left
+        istep(margin.y, 1.-st.y), // top
+        istep(margin.x, 1.-st.x), // right
+        istep(margin.y, st.y)     // bottom
+    );
 
-    gl_FragColor = vec4(color,1.0);
+    color = vec3(productFold(sides) + sumFold(margins));
+
+    gl_FragColor = vec4(color, 1.0);
 }
