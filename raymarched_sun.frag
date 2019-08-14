@@ -40,24 +40,25 @@ float cast_ray(in vec3 ro, in vec3 rd) {
         t += h; // ray march
         if (t >= T_MAX) break; // we've explored enough 
     }
+    if (t >= T_MAX) t = -1.0; // we're "inside" the "outside" of the scene
     return t;
 }
 
 void main() {
     // pixel values normalized to [-1, 1] on the y axis, 
     // with (0, 0) at the center of the screen
-	vec2 p = (2.0 * gl_FragCoord.xy - u_resolution) / u_resolution.y;
+	vec2 p = (2.0 * gl_FragCoord.xy - u_resolution) / u_resolution.x;
     
     // camera (ray origin)
     vec3 ro = vec3(0, 0, 1);
     // point we're looking at (ray direction)
     vec3 rd = normalize(vec3(p, -1.5));
 
-    vec3 color = vec3(0.225);
+    vec3 color = vec3(0.255);
 
     float t = cast_ray(ro, rd);
 
-    if (t < T_MAX) {
+    if (t >= 0.0) {
         // we hit something
         vec3 hit_point = ro + t * rd;
         vec3 normal = calc_normal(hit_point);
@@ -69,12 +70,11 @@ void main() {
 
         // sun shadow (asks: "can this point be seen from the light source?")
         // obs.: we offset the query point a little to prevent self intersections
-        float sun_sha = step(-cast_ray(hit_point + normal * 0.001, sun_dir), -10.); // -0 < -t ? 0 : 1
-        // t < 0 ? 0 : 1
+        float sun_sha = step(cast_ray(hit_point + normal * 0.001, sun_dir), 0.0); // 0 if t < 0.0
         
-        color  = vec3(1.0, 0.7, 0.5) * sun_dif * sun_sha;
-        // the more a surface is facing up (y axis), the more sunlight it'll catch
-        color += vec3(0.0, 0.1, 0.3) * sky_dif;
+        color  = vec3(1.0, 0.8, 0.6) * sun_dif * sun_sha;
+        // the more a surface is facing up (y axis), the more sky light it'll catch
+        color += vec3(0.0, 0.05, 0.2) * sky_dif;
     }
 
 
