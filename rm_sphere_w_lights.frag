@@ -40,6 +40,7 @@ float cast_ray(in vec3 ro, in vec3 rd) {
         t += h; // ray march
         if (t >= T_MAX) break; // we've explored enough 
     }
+
     if (t >= T_MAX) t = -1.0; // we're "inside" the "outside" of the scene
     return t;
 }
@@ -48,13 +49,27 @@ void main() {
     // pixel values normalized to [-1, 1] on the y axis, 
     // with (0, 0) at the center of the screen
 	vec2 p = (2.0 * gl_FragCoord.xy - u_resolution) / u_resolution.x;
-    
-    // camera (ray origin)
-    vec3 ro = vec3(0, 0, 1);
-    // point we're looking at (ray direction)
-    vec3 rd = normalize(vec3(p, -1.5));
+    float an = 8.0 * u_mouse.x / u_resolution.x;
+    //an = 2.0 * u_time;
 
-    vec3 color = vec3(0.01);
+    // camera (ray origin)
+    vec3 ro = vec3(1.0 * sin(an), 0.0, 1.0 * cos(an));
+
+    // target point
+    vec3 ta = vec3(0);
+
+    // camera transformation
+    vec3 ww = normalize(ta - ro);                  // front versor
+    vec3 uu = normalize(cross(ww, vec3(0, 1, 0))); // right versor
+    vec3 vv = normalize(cross(uu, ww));            // top versor
+
+    // point we're looking at (ray direction)
+    vec3 rd = normalize(p.x * uu + p.y * vv + 1.5 * ww);
+
+    // base sky color gradient
+    vec3 color = vec3(0.4, 0.75, 1.0) - 0.7 * rd.y;
+    // make the horizon line brighter and less saturated
+    color = mix(color, vec3(0.7, 0.75, 0.8), exp(-10.0 * rd.y));
 
     float t = cast_ray(ro, rd);
 
