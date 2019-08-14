@@ -11,10 +11,20 @@ uniform float u_time;
 #define SPHERE_RADIUS 0.25
 #define T_MAX 20.0
 
+// how far inside/outside the sphere is the point at 'pos'?
 float map(in vec3 pos) {
-    // how far inside/outside the sphere is the point at 'pos'?
     float d = length(pos) - SPHERE_RADIUS;
     return d;
+}
+
+// approximates the surface normal to get a sense of orientation
+vec3 calc_normal(in vec3 pos) {
+    vec2 e = vec2(0.0001, 0.0);
+    // surface gradient
+    return normalize(vec3(                     // how much do things change in the:
+        map(pos + e.xyy) - map(pos - e.xyy),   //   left-right axis
+        map(pos + e.yxy) - map(pos - e.yxy),   //   top-down
+        map(pos + e.yyx) - map(pos - e.yyx))); //   front-back
 }
 
 void main() {
@@ -23,27 +33,28 @@ void main() {
 	vec2 p = (2.0 * gl_FragCoord.xy - u_resolution) / u_resolution.y;
     
     // camera (ray origin)
-    vec3 ro = vec3(0, 0, 2);
+    vec3 ro = vec3(0, 0, 1);
     // point we're looking at (ray direction)
     vec3 rd = normalize(vec3(p, -1.5));
 
     vec3 color = vec3(0.225);
 
-    // ray march
     float t = 0.0;
     for (int i = 0; i < 100; ++i) {
         vec3 pos = ro + t * rd; // p(t)
 
-        float h = map(pos); // hit point
+        float h = map(pos); // hit point distance to the sphere center
         if (h < 0.001) break; // we're close enough to the surface (0.0)
 
-        t += h;
+        t += h; // ray march
         if (t >= T_MAX) break; // we've explored enough 
     }
 
     if (t < T_MAX) {
         // we hit something
-        color = vec3(1.0);
+        vec3 hit_point = ro + t * rd;
+        vec3 norm = calc_normal(hit_point);
+        color = vec3(norm.zzz);
     }
 
 
