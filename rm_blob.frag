@@ -6,15 +6,13 @@ uniform vec2 u_resolution;
 uniform vec2 u_mouse;
 uniform float u_time;
 
-#define cos_01(x) (0.5 + 0.5 * cos(x))
-
 #define SPHERE_RADIUS 0.25
 #define T_MAX 20.0
 
 // signed distance function to an ellipsoid
-float sd_ellipsoid(in vec3 pos, float rad) {
-    float d = length(pos) - rad;
-    return d;
+float sd_ellipsoid(in vec3 pos, vec3 radii) {
+    float d = length(pos / radii) - 1.0; // scale space to work with unit radius
+    return d * min(min(radii.x, radii.y), radii.z); // "undistort" the space
 }
 
 // signed distance function to the blobby character 'guy'
@@ -22,7 +20,8 @@ float sd_guy(in vec3 pos) {
     float t = fract(u_time);
     float y = 4.0 * t * (1.0 - t);
     vec3 cen = vec3(0.0, y, 0.0);
-    return sd_ellipsoid(pos - cen, SPHERE_RADIUS);
+    vec3 radii = vec3(0.25);
+    return sd_ellipsoid(pos - cen, radii);
 }
 
 // how far inside/outside the spheres in the scene is the point at 'pos'?
