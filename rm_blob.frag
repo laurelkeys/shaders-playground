@@ -11,8 +11,9 @@ uniform float u_time;
 
 // signed distance function to an ellipsoid
 float sd_ellipsoid(in vec3 pos, vec3 radii) {
-    float d = length(pos / radii) - 1.0; // scale space to work with unit radius
-    return d * min(min(radii.x, radii.y), radii.z); // "undistort" the space
+    float k0 = length(pos / radii);
+    float k1 = length(pos / radii / radii);
+    return k0 * (k0 - 1.0) / k1;
 }
 
 // signed distance function to the blobby character 'guy'
@@ -20,7 +21,9 @@ float sd_guy(in vec3 pos) {
     float t = fract(u_time);
     float y = 4.0 * t * (1.0 - t);
     vec3 cen = vec3(0.0, y, 0.0);
-    vec3 radii = vec3(0.25);
+    float sy = 0.5 + 0.5 * y; // squash and stretch
+    float sz = 1.0 / sy; // scale z for the ellipsoid to preserve it's volume
+    vec3 radii = vec3(SPHERE_RADIUS, SPHERE_RADIUS * sy, SPHERE_RADIUS * sz);
     return sd_ellipsoid(pos - cen, radii);
 }
 
@@ -62,8 +65,8 @@ void main() {
     // pixel values normalized to [-1, 1] on the y axis, 
     // with (0, 0) at the center of the screen
 	vec2 p = (2.0 * gl_FragCoord.xy - u_resolution) / u_resolution.x;
-    //float an = 8.0 * u_mouse.x / u_resolution.x;
-    float an = 1.5 * u_time;
+    float an = 8.0 * u_mouse.x / u_resolution.x;
+    //float an = 1.5 * u_time;
 
     // target point
     vec3 ta = vec3(0.0, 0.5, 0.0);
