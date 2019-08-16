@@ -18,13 +18,21 @@ float sd_ellipsoid(in vec3 pos, vec3 radii) {
 
 // signed distance function to the blobby character 'guy'
 float sd_guy(in vec3 pos) {
-    float t = fract(u_time);
+    float t = 0.5; //fract(u_time);
     float y = 4.0 * t * (1.0 - t);
+    float dy = 4.0 * (1.0 - 2.0 * t); // derivative of y
+
+    vec2 u = vec2(1.0, dy);
+    vec2 v = vec2(-dy, 1.0); // perpendicular to the tangent vector u (dot(u, v) == 0)
+
     vec3 cen = vec3(0.0, y, 0.0);
     float sy = 0.5 + 0.5 * y; // squash and stretch
     float sz = 1.0 / sy; // scale z for the ellipsoid to preserve it's volume
     vec3 radii = vec3(SPHERE_RADIUS, SPHERE_RADIUS * sy, SPHERE_RADIUS * sz);
-    return sd_ellipsoid(pos - cen, radii);
+
+    float sd = sd_ellipsoid(pos - cen, radii);
+
+    return sd;
 }
 
 // how far inside/outside the spheres in the scene is the point at 'pos'?
