@@ -37,21 +37,19 @@ bool cast_ray(in vec3 ro, in vec3 rd, out float t_res) {
     const float t_min = 0.001;
     const float t_max = 10.0; // "visibility distance"
 
-    float lh = 0.0;
-    float ly = 0.0;
+    //float lh = 0.0;
+    //float ly = 0.0;
 
     for (float t = t_min; t < t_max; t += dt) {
         vec3 p = ro + rd * t;
         float h = f(p.x, p.z);
         if (p.y < h) {
-            // interpolate the intersection distance
-            t_res = t - dt + dt * (lh-ly) / (p.y-ly-h+lh);
-            //t_res = t - 0.5 * dt; // point between the last two values of t
+            //t_res = t - dt + dt * (lh-ly) / (p.y-ly-h+lh); // interpolate the intersection distance
+            t_res = t - 0.5 * dt; // point between the last two values of t
             return true; // the ray's crossed the terrain surface
         }
-        //dt = 0.01 * t; // allow the error to be proportinal to the distance
-        lh = h;
-        ly = p.y;
+        //lh = h;
+        //ly = p.y;
     }
     
     return false; // the ray didn't hit the terrain surface
