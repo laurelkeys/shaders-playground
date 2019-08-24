@@ -9,6 +9,17 @@ uniform float u_time;
 #define SPHERE_RADIUS 0.25
 #define T_MAX 20.0
 
+// polynomial smooth min (https://www.iquilezles.org/www/articles/smin/smin.htm)
+float smin(in float a, in float b, in float k) {
+    float h = max(k - abs(a - b), 0.0);
+    return min(a, b) - h * h / (k * 4.0);
+}
+
+// signed distance function to a sphere
+float sd_sphere(in vec3 pos, float radius) {
+    return length(pos) - radius;
+}
+
 // signed distance function to an ellipsoid
 float sd_ellipsoid(in vec3 pos, vec3 radii) {
     float k0 = length(pos / radii);
@@ -16,9 +27,10 @@ float sd_ellipsoid(in vec3 pos, vec3 radii) {
     return k0 * (k0 - 1.0) / k1;
 }
 
-// signed distance function to the blobby character 'guy'
+// returns a vec2 with the signed distance function to the blobby
+// character 'guy' and also a flag that indicates the hit material
 float sd_guy(in vec3 pos) {
-    float t = 0.5; //fract(u_time);
+    float t = 0.5; // fract(u_time);
     float y = 4.0 * t * (1.0 - t);
     float dy = 4.0 * (1.0 - 2.0 * t); // derivative of y
 
@@ -30,9 +42,22 @@ float sd_guy(in vec3 pos) {
     float sz = 1.0 / sy; // scale z for the ellipsoid to preserve it's volume
     vec3 radii = vec3(SPHERE_RADIUS, SPHERE_RADIUS * sy, SPHERE_RADIUS * sz);
 
-    float sd = sd_ellipsoid(pos - cen, radii);
+    vec3 q = pos - cen; // guy's coordinate system center
+    float d1 = sd_ellipsoid(q, radii);
 
-    return sd;
+    // head
+    vec3 head = q;
+    float d2 = sd_ellipsoid(head - vec3(0, 0.28, 0), vec3(0.2));
+    float d3 = sd_ellipsoid(head - vec3(0, 0.28, -0.1), vec3(0.2));
+    d2 = smin(d2, d3, 0.03);
+    d1 = smin(d1, d2, 0.1);
+
+    // eye
+    vec3 shead = vec3(abs(head.x), head.yz); // exploit simmetry by using the absolute value of the x axis
+    float d4 = sd_sphere(shead - vec3(0.08, 0.28, 0.16), 0.05);
+
+    float d = min(d1, d4);
+    return d;
 }
 
 // how far inside/outside the spheres in the scene is the point at 'pos'?
@@ -73,11 +98,13 @@ void main() {
     // pixel values normalized to [-1, 1] on the y axis, 
     // with (0, 0) at the center of the screen
 	vec2 p = (2.0 * gl_FragCoord.xy - u_resolution) / u_resolution.x;
-    float an = 8.0 * u_mouse.x / u_resolution.x;
-    //float an = 1.5 * u_time;
+
+    float an = 8.0 * u_mouse.x / u_resolution.x; // move camera angle with the mouse
+    // float an = 1.5 * u_time; // move camera angle with time
+    // float an = 0.0; // fix camera angle
 
     // target point
-    vec3 ta = vec3(0.0, 0.5, 0.0);
+    vec3 ta = vec3(0.0, 0.95, 0.0);
 
     // camera (ray origin)
     vec3 ro = ta + vec3(1.5 * sin(an), 0.0, 1.5 * cos(an));
