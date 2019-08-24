@@ -9,10 +9,25 @@ uniform float u_time;
 #define SPHERE_RADIUS 0.25
 #define T_MAX 20.0
 
+// indexing of sd_ functions returns
+#define SDF 0
+#define MAT 1
+
+// materials
+#define MAT_FLOOR    1.0
+#define MAT_BODY     2.0
+#define MAT_EYE      3.0
+#define MAT_PUPIL    4.0
+
 // polynomial smooth min (https://www.iquilezles.org/www/articles/smin/smin.htm)
 float smin(in float a, in float b, in float k) {
     float h = max(k - abs(a - b), 0.0);
     return min(a, b) - h * h / (k * 4.0);
+}
+
+float smax(in float a, in float b, in float k) {
+    float h = max(k - abs(a - b), 0.0);
+    return max(a, b) + h * h / (k * 4.0);
 }
 
 // signed distance function to a sphere
@@ -27,10 +42,18 @@ float sd_ellipsoid(in vec3 pos, vec3 radii) {
     return k0 * (k0 - 1.0) / k1;
 }
 
+float sd_stick(in vec3 pos, vec3 a, vec3 b, float ra, float rb) {
+    vec3 ba = b - a;
+    vec3 pa = pos - a;
+    float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+    float r = mix(ra, rb, h);
+    return length(pa - h * ba) - r;
+}
+
 // returns a vec2 with the signed distance function to the blobby
 // character 'guy' and also a flag that indicates the hit material
-float sd_guy(in vec3 pos) {
-    float t = 0.5; // fract(u_time);
+vec2 sd_guy(in vec3 pos) {
+    float t = fract(u_time);
     float y = 4.0 * t * (1.0 - t);
     float dy = 4.0 * (1.0 - 2.0 * t); // derivative of y
 
@@ -43,55 +66,109 @@ float sd_guy(in vec3 pos) {
     vec3 radii = vec3(SPHERE_RADIUS, SPHERE_RADIUS * sy, SPHERE_RADIUS * sz);
 
     vec3 q = pos - cen; // guy's coordinate system center
-    float d1 = sd_ellipsoid(q, radii);
+    float d = sd_ellipsoid(q, radii);
 
     // head
     vec3 head = q;
-    float d2 = sd_ellipsoid(head - vec3(0, 0.28, 0), vec3(0.2));
-    float d3 = sd_ellipsoid(head - vec3(0, 0.28, -0.1), vec3(0.2));
-    d2 = smin(d2, d3, 0.03);
-    d1 = smin(d1, d2, 0.1);
-
-    // eye
     vec3 shead = vec3(abs(head.x), head.yz); // exploit simmetry by using the absolute value of the x axis
-    float d4 = sd_sphere(shead - vec3(0.08, 0.28, 0.16), 0.05);
+    float d2 = sd_ellipsoid(head - vec3(0, 0.28, 0), vec3(0.15, 0.2, 0.23));
+    float d3 = sd_ellipsoid(head - vec3(0, 0.28, -0.1), vec3(0.22, 0.2, 0.2));
+    
+    d2 = smin(d2, d3, 0.05);
+    d = smin(d, d2, 0.15);
 
-    float d = min(d1, d4);
-    return d;
+    // eyebrows
+    vec3 eb = shead - vec3(0.12, 0.34, 0.15);
+    eb.xy = (mat2(3, 4, -4, 3) / 5.0) * eb.xy; // rotate the eyebrow's coordinate system
+    d2 = sd_ellipsoid(eb, vec3(0.06, 0.035, 0.05));
+    d = smin(d, d2, 0.04);
+
+    // mouth
+    d2 = sd_ellipsoid(head - vec3(0.0, 0.15 + 3.0 * head.x * head.x, 0.15), // stretch space to make a smile
+                    vec3(0.1, 0.04, 0.2));
+    d = smax(d, -d2, 0.03); // space carving
+
+    // ears
+    d2 = sd_stick(shead, vec3(0.1, 0.4, -0.01), vec3(0.2, 0.55, 0.05), 0.01, 0.03);
+    d = smin(d, d2, 0.03);
+
+    vec2 res = vec2(d, MAT_BODY);
+    
+    // eye (sclera)
+    float d4 = sd_sphere(shead - vec3(0.08, 0.28, 0.16), 0.05);
+    if (d4 < d) {
+        res = vec2(d4, MAT_EYE); // show the eyes if they're closer
+        d = d4;
+    }
+
+    // pupil
+    d4 = sd_sphere(shead - vec3(0.09, 0.28, 0.195), 0.02);
+    if (d4 < d) res = vec2(d4, MAT_PUPIL); // show the eyes if they're closer
+
+    return res;
 }
 
 // how far inside/outside the spheres in the scene is the point at 'pos'?
-float map(in vec3 pos) {
-    float d1 = sd_guy(pos);
+// and also, which material was hit?
+vec2 map(in vec3 pos) {
+    vec2 d1 = sd_guy(pos); // returns vec2(sdf value, hit material)
+
     // ground plane at y = -SPHERE_RADIUS (so the sphere perctly touches it)
     float d2 = pos.y - (-SPHERE_RADIUS); // a plane's SDF is how high above it you are
-    return min(d1, d2);
+    
+    return d2 < d1[SDF] ? vec2(d2, MAT_FLOOR) : d1;
 }
 
 // approximates the surface normal to get a sense of orientation
 vec3 calc_normal(in vec3 pos) {
     vec2 e = vec2(0.0001, 0.0);
     // surface gradient
-    return normalize(vec3(                     // how much do things change in the:
-        map(pos + e.xyy) - map(pos - e.xyy),   //   left-right axis
-        map(pos + e.yxy) - map(pos - e.yxy),   //   top-down
-        map(pos + e.yyx) - map(pos - e.yyx))); //   front-back
+    return normalize(vec3(                               // how much do things change in the:
+        map(pos + e.xyy)[SDF] - map(pos - e.xyy)[SDF],   //   left-right axis
+        map(pos + e.yxy)[SDF] - map(pos - e.yxy)[SDF],   //   top-down
+        map(pos + e.yyx)[SDF] - map(pos - e.yyx)[SDF])); //   front-back
 }
 
-float cast_ray(in vec3 ro, in vec3 rd) {
+float cast_shadow(in vec3 ro, in vec3 rd) {
+    float res = 1.0;
+
+    float t = 0.001;
+    for (int i = 0; i < 100; ++i) {
+        vec3 pos = ro + t * rd; // p(t)
+        float h = map(pos)[SDF];
+        // if (h < 0.0001) break; // obs.: quits early but makes the shadow close to the eye weird
+
+        // soft shadows
+        res = min(res, 16.0 * h / t);
+        t += h;
+        if (t > 20.0) break;
+    }
+
+    return clamp(res, 0.0, 1.0);
+}
+
+// returns the distance to the closest intersection and the material
+vec2 cast_ray(in vec3 ro, in vec3 rd) {
+    float m = -1.0;
     float t = 0.0;
     for (int i = 0; i < 100; ++i) {
         vec3 pos = ro + t * rd; // p(t)
 
-        float h = map(pos); // hit point distance to the sphere center
+        vec2 hm = map(pos); // hit point distance to the sphere center and material
+        m = hm[MAT];
+
+        float h = hm[SDF];
         if (h < 0.001) break; // we're close enough to the surface (0.0)
 
-        t += h; // ray march
+        t += h; // raymarch
         if (t >= T_MAX) break; // we've explored enough 
     }
 
-    if (t >= T_MAX) t = -1.0; // we're "inside" the "outside" of the scene
-    return t;
+    if (t >= T_MAX) {
+        // t = -1.0; // we're "inside" the "outside" of the scene
+        m = -1.0;
+    }
+    return vec2(t, m);
 }
 
 void main() {
@@ -99,8 +176,8 @@ void main() {
     // with (0, 0) at the center of the screen
 	vec2 p = (2.0 * gl_FragCoord.xy - u_resolution) / u_resolution.x;
 
-    float an = 8.0 * u_mouse.x / u_resolution.x; // move camera angle with the mouse
-    // float an = 1.5 * u_time; // move camera angle with time
+    // float an = 8.0 * u_mouse.x / u_resolution.x; // move camera angle with the mouse
+    float an = 1.5 * u_time; // move camera angle with time
     // float an = 0.0; // fix camera angle
 
     // target point
@@ -122,21 +199,29 @@ void main() {
     // make the horizon line brighter and less saturated
     color = mix(color, vec3(0.7, 0.75, 0.8), exp(-10.0 * rd.y));
 
-    float t = cast_ray(ro, rd);
+    vec2 tm = cast_ray(ro, rd); // hit point t and material m
+    if (tm.y >= 0.0) {
+        float t = tm.x;
+        float m = tm.y;
 
-    if (t >= 0.0) {
         // we hit something
         vec3 hit_point = ro + t * rd;
         vec3 normal = calc_normal(hit_point);
 
+        // add color based on the material
         vec3 matte = vec3(0.18); // albedo, "whiteness" (obs.: grass albedo ~= 0.25)
+        if (m == MAT_FLOOR)      matte = vec3(0.05, 0.1, 0.02);
+        else if (m == MAT_BODY)  matte = vec3(0.4, 0.1, 0.02);
+        else if (m == MAT_EYE)   matte = vec3(0.4);
+        else if (m == MAT_PUPIL) matte = vec3(0.005);
 
-        vec3 sun_dir = normalize(vec3(0.8, 0.4, -0.2));
+        vec3 sun_dir = normalize(vec3(0.8, 0.4, 0.2));
         // key light (sun diffuse)
         float sun_dif = clamp(dot(normal, sun_dir), 0.0, 1.0);
         // sun shadow (asks: "can this point be seen from the light source?")
         // obs.: we offset the query point a little to prevent self intersections
-        float sun_sha = step(cast_ray(hit_point + normal * 0.001, sun_dir), 0.0); // 0 if t < 0.0
+        // float sun_sha = step(cast_ray(hit_point + normal * 0.001, sun_dir)[MAT], 0.0); // 0 if t < 0.0
+        float sun_sha = cast_shadow(hit_point + normal * 0.001, sun_dir);
 
         // fill light (sky diffuse)
         float sky_dif = clamp(0.5 + 0.5 * dot(normal, vec3(0.0, 1.0, 0.0)), 0.0, 1.0);
