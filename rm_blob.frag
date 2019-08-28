@@ -46,14 +46,13 @@ float sd_stick(in vec3 pos, vec3 a, vec3 b, float ra, float rb) {
     vec3 ba = b - a;
     vec3 pa = pos - a;
     float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
-    float r = mix(ra, rb, h * h * (3.0 - 2.0 * h));
+    float r = mix(ra, rb, h);
     return length(pa - h * ba) - r;
 }
 
 // returns a vec2 with the signed distance function to the blobby
 // character 'guy' and also a flag that indicates the hit material
 vec2 sd_guy(in vec3 pos) {
-    // float t = 0.5;
     float t = fract(u_time);
     float y = 4.0 * t * (1.0 - t);
     float dy = 4.0 * (1.0 - 2.0 * t); // derivative of y
@@ -148,14 +147,6 @@ float cast_shadow(in vec3 ro, in vec3 rd) {
     return clamp(res, 0.0, 1.0);
 }
 
-mat3 set_camera(in vec3 ro, in vec3 ta, float cr) {
-	vec3 cw = normalize(ta - ro); // front versor
-	vec3 cp = vec3(sin(cr), cos(cr), 0.0);
-	vec3 cu = normalize(cross(cw, cp)); // right versor
-	vec3 cv = (cross(cu, cw)); // top versor
-    return mat3(cu, cv, cw);
-}
-
 // returns the distance to the closest intersection and the material
 vec2 cast_ray(in vec3 ro, in vec3 rd) {
     float m = -1.0;
@@ -186,8 +177,8 @@ void main() {
 	vec2 p = (2.0 * gl_FragCoord.xy - u_resolution) / u_resolution.x;
 
     // float an = 8.0 * u_mouse.x / u_resolution.x; // move camera angle with the mouse
-    // float an = 1.5 * u_time; // move camera angle with time
-    float an = 0.0; // fix camera angle
+    float an = 1.5 * u_time; // move camera angle with time
+    // float an = 0.0; // fix camera angle
 
     // target point
     vec3 ta = vec3(0.0, 0.95, 0.0);
