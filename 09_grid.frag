@@ -26,17 +26,13 @@ float circle(in vec2 st, in float radius) {
 void main() {
 	vec2 st = gl_FragCoord.xy / u_resolution;
 
-    // vec2(rows, columns)
-    // const vec2 dim = vec2(3.0, 3.0);
-
-    vec2 dim = vec2(sin_ab(u_time, 1.0, 3.0), cos_ab(2.*u_time, 3.0, 1.0));
-
+    vec2 dim = vec2(3.0, 3.0);
     st *= dim;
     st = fract(st);
 
     vec3 color = vec3(0.0);
     color = vec3(st, 0.0);
-    color = vec3(circle(st, 0.5));
+    // color = vec3(circle(st, 0.5));
 
 	gl_FragColor = vec4(color, 1.0);
 }
