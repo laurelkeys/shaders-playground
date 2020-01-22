@@ -104,3 +104,5 @@ void main(void) {
 
     gl_FragColor = vec4(sqrt(color), 1.0);
 }
+
+// ref.: https://help.poliigon.com/en/articles/1712652-what-are-the-different-texture-maps-for
